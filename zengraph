@@ -15,6 +15,7 @@ GetOptions(\%option,
 	   'debug',
 	   'help',
 	   'save=s',
+	   'small',
 	   'title=s',
 	   'view',
 	  );
@@ -94,6 +95,7 @@ print OUT "set terminal png small color\n";
 print OUT "set output 'temp.$$.png'\n";
 print OUT "set timefmt '%Y-%m-%d'\n";
 print OUT "set xdata time\n";
+print OUT "set size .5,.5\n" if $option{small};
 print OUT "set ylabel 'Count'\n";
 print OUT "set xlabel 'Date'\n";
 print OUT "set format x \"%m-%d\\n%Y\"\n";
