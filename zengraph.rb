@@ -96,14 +96,14 @@ class ZenGraph
   def save(file)
     generate_gnuplot unless @generated
 
-    `cp temp.$$.png #{file}`
+    `cp temp.#{$$}.png #{file}`
 
   end
 
   def view
     generate_gnuplot unless @generated
 
-    `xv temp.$$.png`
+    `xv temp.#{$$}.png`
   end
 
   protected
@@ -150,7 +150,7 @@ class ZenGraph
 
     # TODO these should all be customizable
     out.print "set terminal png small color\n";
-    out.print "set output 'temp.$$.png'\n";
+    out.print "set output 'temp.#{$$}.png'\n";
     out.print "set timefmt '%Y-%m-%d'\n";
     out.print "set xdata time\n";
     out.print "set ylabel 'Count'\n";
