@@ -129,7 +129,7 @@ class ZenGraph
     for title in headers
       out.printf "%-12s ", title;
     end
-    puts
+    out.puts
 
     for date in @data.dates.sort! { |a,b| a <=> b }
       out.printf "%-12s ", date
@@ -142,6 +142,8 @@ class ZenGraph
 
     path = out.path
     out.close
+
+    `cp #{path} t.dat`
 
     out = Tempfile.open("zengraph_dem.")
 
@@ -171,15 +173,15 @@ class ZenGraph
 
     i = 1
     for title in titles
-      print ", " if i > 1
+      out.print ", " if i > 1
       i = i + 1
-      out.print "'#{path}' using 1:#{i} t '#{title}' with lines lt #{lt[i-2]}"
+      out.print "'#{path}' using 1:#{i} t '#{title}' with lines lt #{lt[i-2]} "
     end
 
     out.close
+    `cp #{out.path} t.dem`
 
     `/usr/local/bin/gnuplot #{out.path}`
-
     @generated = true
 
   end
@@ -191,8 +193,9 @@ if $0 == __FILE__
   class MyZenGraph < ZenGraph
 
     def process_line(line)
-      if (line =~ /(\d\d\d\d-\d\d-\d\d): (\d+)/)
-	@data[$1, 'weight'] = $2
+      #if (line =~ /(\d\d\d\d-\d\d-\d\d):\s*(\w+)\s+([\d\.]+)/)
+      if (line =~ /(\d\d\d\d-\d\d-\d\d):\s*(\w+)\s+(\d+)/)
+	@data[$1, $2] = $3
       end
     end
 
