@@ -10,5 +10,7 @@ test: syntax-check
 run:
 	ruby zengraph.rb test.rb
 
+clean:
+
 x:
 	ruby test.rb
