@@ -48,8 +48,13 @@ print "$config\n\n" if $option{debug};
 eval $config;
 die "Error in eval: $@" if $@;
 
-while (<>) {
-  &process_line;
+foreach my $file (@ARGV) {
+  open IN, $file || die "Couldn't open file '$file': $!";
+
+  &process_file;
+  while (<IN>) {
+    &process_line;
+  }
 }
 
 my @titles = ();
@@ -107,7 +112,8 @@ print OUT "plot ";
 # repeat
 
 # I can't stand cyan or yellow on a white background
-my @lt = qw( 1 2 3 5 7 8 9 1 2 3 5 7 8 9 1 2 3 5 7 8 9 );
+my @lt = qw( 1 2 3 5 7 8 9 );
+@lt = (@lt, @lt, @lt, @lt, @lt);
 
 my $i = 1;
 foreach my $title (@titles) {
