@@ -45,6 +45,10 @@ class GraphData
     return tmp.nil? ? nil : tmp[label]
   end
 
+  def has_keys?(date, label)
+    return @data.has_key?(date) && @data[date].has_key?(label)
+  end
+
   def []=(date, label, value)
 
     @data[date] = {} if @data[date].nil?
@@ -54,8 +58,12 @@ class GraphData
   def titles 
 
     titles = []
-    for date in @data.keys.sort!
-      for key in @data[date].keys.sort!
+
+    p @data
+
+    for date in @data.keys.sort
+      p date
+      for key in @data[date].keys.sort
 	titles.push key unless titles.include? key
       end
     end
@@ -83,21 +91,19 @@ class ZenGraph
 
       process_file(file)
     }
-
   end
 
   def save(file)
     generate_gnuplot unless @generated
 
-    # `cp temp.$$.png #{file}`
+    `cp temp.$$.png #{file}`
 
   end
 
   def view
     generate_gnuplot unless @generated
 
-    # `xv temp.$$.png`
-
+    `xv temp.$$.png`
   end
 
   protected
@@ -119,37 +125,32 @@ class ZenGraph
 
   def generate_gnuplot
 
-    titles = @data.titles.sort
-
-    headers = titles.dup
-    headers.unshift('#Day')
-
     out = Tempfile.open("zengraph_dat.")
 
-    for title in headers
-      out.printf "%-12s ", title;
-    end
-    out.puts
+    titles = @data.titles.sort
+    for title in titles
+      out.printf "%12s%12s\n", '#Day', title;
 
-    for date in @data.dates.sort! { |a,b| a <=> b }
-      out.printf "%-12s ", date
-      for tag in titles
-	n =  @data[date, tag] || 0
-	out.printf "%-12d ", n
+      for date in @data.dates.sort { |a,b| a <=> b }
+	if @data.has_keys?(date, title) then
+	  out.printf "%-12s%12.2f\n", date, @data[date, title]
+	end
       end
+
+      out.puts
       out.puts
     end
 
     path = out.path
     out.close
 
-    `cp #{path} t.dat`
+    # `cp #{path} t.dat`
 
     out = Tempfile.open("zengraph_dem.")
 
     # TODO these should all be customizable
     out.print "set terminal png small color\n";
-    out.print "set output 'temp.png'\n";
+    out.print "set output 'temp.$$.png'\n";
     out.print "set timefmt '%Y-%m-%d'\n";
     out.print "set xdata time\n";
     out.print "set ylabel 'Count'\n";
@@ -171,21 +172,28 @@ class ZenGraph
     # I can't stand cyan or yellow on a white background
     lt = [ 1, 2, 3, 5, 7, 8, 9 ] * 5
 
-    i = 1
-    for title in titles
-      out.print ", " if i > 1
+    i = 0
+    for title in titles.sort
+      out.print ", " if i > 0
+      out.print "'#{path}' index #{i} using 1:2 t '#{title}' with linespoints lt #{lt[i]} "
       i = i + 1
-      out.print "'#{path}' using 1:#{i} t '#{title}' with lines lt #{lt[i-2]} "
     end
 
     out.close
-    `cp #{out.path} t.dem`
+    # `cp #{out.path} t.dem`
 
     `/usr/local/bin/gnuplot #{out.path}`
     @generated = true
 
   end
   
+  # i = 1
+  # for title in titles
+  # out.print ", " if i > 1
+  # i = i + 1
+  # out.print "'#{path}' using 1:#{i} t '#{title}' with lines lt #{lt[i-2]} "
+  # end
+
 end # ZenGraph
 
 if $0 == __FILE__
@@ -193,8 +201,8 @@ if $0 == __FILE__
   class MyZenGraph < ZenGraph
 
     def process_line(line)
-      #if (line =~ /(\d\d\d\d-\d\d-\d\d):\s*(\w+)\s+([\d\.]+)/)
-      if (line =~ /(\d\d\d\d-\d\d-\d\d):\s*(\w+)\s+(\d+)/)
+      # if (line =~ /(\d\d\d\d-\d\d-\d\d):\s*(\w+)\s+(\d+)/)
+      if (line =~ /(\d\d\d\d-\d\d-\d\d):\s*(\w+)\s+([\d\.]+)/)
 	@data[$1, $2] = $3
       end
     end
