@@ -1,6 +1,8 @@
-#!/usr/local/bin/ruby
+#!/usr/local/bin/ruby -ws
 
 require "tempfile"
+
+$a = false unless defined? $a
 
 # OO Version of zengraph, which allows for a completely customizable
 # parsing and graphing system. The first major subsystem is responsible
@@ -35,6 +37,8 @@ require "tempfile"
 
 class GraphData
 
+  attr_reader :data
+
   def initialize
     @data = {}
   end # initialize
@@ -59,10 +63,7 @@ class GraphData
 
     titles = []
 
-    p @data
-
     for date in @data.keys.sort
-      p date
       for key in @data[date].keys.sort
 	titles.push key unless titles.include? key
       end
@@ -85,6 +86,10 @@ class ZenGraph
     @generated = false
   end
 
+  def []=(date, label, value)
+    @data[date, label] = value
+  end
+
   def process_files(files)
     files.each {
       | file |
@@ -97,7 +102,7 @@ class ZenGraph
     generate_gnuplot unless @generated
 
     `cp temp.#{$$}.png #{file}`
-
+    File.unlink "temp.#{$$}.png"
   end
 
   def view
@@ -144,56 +149,34 @@ class ZenGraph
     path = out.path
     out.close
 
-    # `cp #{path} t.dat`
-
     out = Tempfile.open("zengraph_dem.")
 
     # TODO these should all be customizable
-    out.print "set terminal png small color\n";
-    out.print "set output 'temp.#{$$}.png'\n";
-    out.print "set timefmt '%Y-%m-%d'\n";
-    out.print "set xdata time\n";
-    out.print "set ylabel 'Count'\n";
-    out.print "set xlabel 'Date'\n";
-    out.print "set format x \"%m-%d\\n%Y\"\n";
-    out.print "set title \"#{@title}\"\n";
+    out.puts "set terminal png small"
+    out.puts "set output 'temp.#{$$}.png'"
+    out.puts "set timefmt '%Y-%m-%d'"
+    out.puts "set xdata time"
+    out.puts "set ylabel 'Count'"
+    out.puts "set xlabel 'Date'"
+    out.puts "set format x \"%s\""
+    out.puts "set format x \"%m-%d\\n%Y\""
+    out.puts "set title \"#{@title}\""
     out.print "plot ";
 
-    # 1 red
-    # 2 lime green
-    # 3 blue
-    # 4 cyan
-    # 5 magenta
-    # 6 yellow
-    # 7 brownish
-    # 8 forest green
-    # 9 navy blue
-
     # I can't stand cyan or yellow on a white background
-    lt = [ 1, 2, 3, 5, 7, 8, 9 ] * 5
+    # echo "set terminal png; test" | gnuplot > test.png
+    lt = ((1..33).to_a - [5, 7, 9, 19]) * 5
 
-    i = 0
-    for title in titles.sort
-      out.print ", " if i > 0
-      out.print "'#{path}' index #{i} using 1:2 t '#{title}' with linespoints lt #{lt[i]} "
-      i = i + 1
+    titles.sort.each_with_index do |title,i|
+       out.print ", " if i > 0
+       out.print "'#{path}' index #{i} using 1:2 t '#{title}' with linespoints lt #{lt[i]} "
     end
 
     out.close
-    # `cp #{out.path} t.dem`
 
-    `/usr/local/bin/gnuplot #{out.path}`
+    `gnuplot #{out.path}`
     @generated = true
-
   end
-  
-  # i = 1
-  # for title in titles
-  # out.print ", " if i > 1
-  # i = i + 1
-  # out.print "'#{path}' using 1:#{i} t '#{title}' with lines lt #{lt[i-2]} "
-  # end
-
 end # ZenGraph
 
 if $0 == __FILE__
