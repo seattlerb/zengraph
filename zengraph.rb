@@ -1,35 +1,37 @@
 #!/usr/local/bin/ruby -ws
 
 require "tempfile"
+require 'fileutils'
 
 $a = false unless defined? $a
+$k = false unless defined? $k
 
 # OO Version of zengraph, which allows for a completely customizable
 # parsing and graphing system. The first major subsystem is responsible
 # for parsing arbitrary text into a deep data structure whose basic shape
 # is:
-# 
+#
 # Data->{date}{xN} = Y.
-# 
+#
 # where:
-# 
+#
 # date is the X unit, in YYYY-MM-DD format.
 # xN is some identifier specifing WHICH X we are graphing.
 # Y is any value for xN on date.
-# 
-# The second subsystem translates some or all of the data into a 
-# set of datafiles for gnuplot, creates the output, and optionally 
+#
+# The second subsystem translates some or all of the data into a
+# set of datafiles for gnuplot, creates the output, and optionally
 # saves or displays the graph.
-# 
+#
 # Things immediatly needed:
-# 
+#
 # 1) Datastructure definition.
 # 2) Basic structure of the two subsystems.
 # 3) Customizablity of parser.
 # 4) Some basic options to specify end result.
-# 
+#
 # Secondary concerns:
-# 
+#
 # 1) Complete customizability of every field in graph.
 # 2) Ability to redifine what the second subsystem does altogether.
 # 3) Removing gnuplot as a requirement and using something native (GD?).
@@ -59,13 +61,13 @@ class GraphData
     @data[date][label] = value
   end
 
-  def titles 
+  def titles
 
     titles = []
 
     for date in @data.keys.sort
       for key in @data[date].keys.sort
-	titles.push key unless titles.include? key
+        titles.push key unless titles.include? key
       end
     end
 
@@ -80,28 +82,30 @@ end # GraphData
 
 class ZenGraph
 
+  attr_accessor :ylabel, :xlabel, :data
+
   def initialize
     @data = GraphData.new
     @title = 'No Title'
     @generated = false
+    @ylabel = "Count"
+    @xlabel = "Date"
   end
 
   def []=(date, label, value)
     @data[date, label] = value
   end
 
-  def process_files(files)
-    files.each {
-      | file |
-
+  def process_files(*files)
+    files.each do | file |
       process_file(file)
-    }
+    end
   end
 
   def save(file)
     generate_gnuplot unless @generated
 
-    `cp temp.#{$$}.png #{file}`
+    FileUtils.copy "temp.#{$$}.png", file
     File.unlink "temp.#{$$}.png"
   end
 
@@ -114,10 +118,9 @@ class ZenGraph
   protected
 
   def process_file(file)
-    IO.foreach(file) {
-      | line |
+    IO.foreach(file) do | line |
       process_line(line)
-    }
+    end
   end
 
   def initialize_file(file)
@@ -137,27 +140,27 @@ class ZenGraph
       out.printf "%12s%12s\n", '#Day', title;
 
       for date in @data.dates.sort { |a,b| a <=> b }
-	if @data.has_keys?(date, title) then
-	  out.printf "%-12s%12.2f\n", date, @data[date, title]
-	end
+        if @data.has_keys?(date, title) then
+          out.printf "%-12s%12.2f\n", date, @data[date, title]
+        end
       end
 
       out.puts
       out.puts
     end
-
     path = out.path
+    out.flush
+    FileUtils.copy path, "#{path}.keep" if $k
     out.close
 
     out = Tempfile.open("zengraph_dem.")
-
     # TODO these should all be customizable
     out.puts "set terminal png small"
     out.puts "set output 'temp.#{$$}.png'"
     out.puts "set timefmt '%Y-%m-%d'"
     out.puts "set xdata time"
-    out.puts "set ylabel 'Count'"
-    out.puts "set xlabel 'Date'"
+    out.puts "set ylabel '#{@ylabel}'"
+    out.puts "set xlabel '#{@xlabel}'"
     out.puts "set format x \"%s\""
     out.puts "set format x \"%m-%d\\n%Y\""
     out.puts "set title \"#{@title}\""
@@ -168,13 +171,21 @@ class ZenGraph
     lt = ((1..33).to_a - [5, 7, 9, 19]) * 5
 
     titles.sort.each_with_index do |title,i|
-       out.print ", " if i > 0
-       out.print "'#{path}' index #{i} using 1:2 t '#{title}' with linespoints lt #{lt[i]} "
+      out.print ", " if i > 0
+      out.print "'#{path}' index #{i} using 1:2 t '#{title}' with linespoints lt #{lt[i]} "
     end
 
-    out.close
+    out.flush
+    FileUtils.copy out.path, "#{out.path}.keep" if $k
+
+    # TOOD: support:
+    # set autoscale y
+    # set autoscale y2
+    # plot "blah" u 1:2 t "title", "path" u 1:3 t "title2" axes x1y2
 
     `gnuplot #{out.path}`
+    out.close
+
     @generated = true
   end
 end # ZenGraph
