@@ -1,16 +1,16 @@
-2002-04-01 1.0.0 - 2 major / 1 minor / 3 bug
+=== 1.0.0 / 2002-04-01
 
-Major Enhancements:
+* 2 major enhancements:
 
-  + Added ABC
-  + Added DEF
+  * Added ABC
+  * Added DEF
 
-Minor Enhancements:
+* 1 minor enhancements:
 
-  + Extended GHI
+  * Extended GHI
 
-Bug Fixes:
+* 3 bug fixes:
 
-  + #1234 - Made X not freak if Y was nil.
-  + #2345 - Something else
-  + #2346 - Yet another bug
+  * #1234 - Made X not freak if Y was nil.
+  * #2345 - Something else
+  * #2346 - Yet another bug
